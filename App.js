@@ -8,6 +8,7 @@ import {
   Alert
 } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
+import Header from './components/Header'
 
 import { auth, db } from './src/services/firebase'
 import {
@@ -112,7 +113,12 @@ export default function App() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Funko App</Text>
+      <Header
+        title=''
+        subtitle={
+          user ? `Signed in as ${user.email}` : 'Sign in or create an account'
+        }
+      />
 
       {/* Authenticated state */}
       {user ? (
@@ -170,7 +176,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#19bd9a',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     padding: 24,
     gap: 12
   },

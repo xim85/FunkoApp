@@ -1,7 +1,8 @@
 import React from 'react'
 import { StyleSheet, Text, View, Image } from 'react-native'
 
-export default function Header() {
+// Reusable header with optional title/subtitle
+export default function Header({ title = 'Funko App', subtitle }) {
   return (
     <View style={styles.container}>
       <Image
@@ -9,28 +10,37 @@ export default function Header() {
         style={styles.logo}
         resizeMode='contain'
       />
-      <Text style={styles.title}>Funko App</Text>
-      <Text style={styles.subtitle}>Funko App</Text>
+
+      <Text style={styles.title}>{title}</Text>
+
+      {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
     </View>
   )
 }
-const style = StyleSheet.create({
+
+const styles = StyleSheet.create({
   container: {
+    width: '100%',
     alignItems: 'center',
-    paddingVertical: 24,
-    gap: 4
+    paddingTop: 40,
+    paddingBottom: 0,
+    gap: 6
   },
   logo: {
-    width: 80,
-    height: 80,
-    marginBottom: 8
+    width: 110,
+    height: 110,
+    marginBottom: 80
   },
   title: {
-    fontSize: 20,
-    fontWeight: '700'
+    fontSize: 24,
+    fontWeight: '900',
+    color: 'white'
   },
   subtitle: {
-    fontSize: 14,
-    color: '#555'
+    fontSize: 16,
+    color: 'white',
+    textAlign: 'center',
+    width: '100%',
+    opacity: 0.8
   }
 })
