@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, Pressable, StyleSheet, Alert, Switch } from 'react-native'
+import {
+  View,
+  Text,
+  TextInput,
+  Pressable,
+  StyleSheet,
+  Alert,
+  Switch
+} from 'react-native'
 import { auth } from '../services/firebase'
 import { logout } from '../services/authService'
 import {
@@ -16,6 +24,17 @@ export default function ProfileScreen() {
 
   // Local state that mirrors the Firestore profile document (users/{uid})
   const [profile, setProfile] = useState(null)
+
+  // Local editable field for displayName (saved on demand)
+  const [displayNameDraft, setDisplayNameDraft] = useState('')
+  const [isDirty, setIsDirty] = useState(false)
+
+  // Keep draft in sync with Firestore unless the user is editing
+  useEffect(() => {
+    if (!profile) return
+    if (isDirty) return
+    setDisplayNameDraft(profile.displayName ?? '')
+  }, [profile, isDirty])
 
   // Subscribe to the Firestore user profile in real time
   useEffect(() => {
@@ -48,8 +67,31 @@ export default function ProfileScreen() {
     const nextVisibility = { ...current, [key]: value }
 
     try {
-      // updateUserProfile also recalculates hasPublicProfile when visibility is provided
       await updateUserProfile(uid, { visibility: nextVisibility })
+    } catch (e) {
+      Alert.alert('Error', String(e.message || e))
+    }
+  }
+  // Validates and saves displayName to Firestore
+  const handleSaveDisplayName = async () => {
+    if (!uid) return
+
+    const trimmed = displayNameDraft.trim()
+
+    if (!trimmed) {
+      Alert.alert('Validation', 'Display name cannot be empty.')
+      return
+    }
+
+    if (trimmed.length > 30) {
+      Alert.alert('Validation', 'Display name must be 30 characters or less.')
+      return
+    }
+
+    try {
+      await updateUserProfile(uid, { displayName: trimmed })
+      setIsDirty(false)
+      Alert.alert('OK', 'Display name updated.')
     } catch (e) {
       Alert.alert('Error', String(e.message || e))
     }
@@ -61,7 +103,25 @@ export default function ProfileScreen() {
 
       <Text style={styles.label}>Signed in as:</Text>
       <Text style={styles.value}>{user?.email ?? '-'}</Text>
+      <Text style={styles.sectionTitle}>Display name</Text>
 
+      <TextInput
+        style={styles.input}
+        placeholder='Your public name'
+        value={displayNameDraft}
+        onChangeText={(t) => {
+          setDisplayNameDraft(t)
+          setIsDirty(true)
+        }}
+      />
+
+      <Pressable
+        style={[styles.saveButton, !isDirty && styles.saveButtonDisabled]}
+        onPress={handleSaveDisplayName}
+        disabled={!isDirty}
+      >
+        <Text style={styles.saveButtonText}>Save</Text>
+      </Pressable>
       <Text style={styles.sectionTitle}>Public visibility</Text>
 
       <View style={styles.row}>
@@ -114,6 +174,24 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   rowLabel: { fontWeight: '600' },
+
+  input: {
+    width: '100%',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10
+  },
+  saveButton: {
+    backgroundColor: '#0f6d5a',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center'
+  },
+  saveButtonDisabled: {
+    opacity: 0.5
+  },
+  saveButtonText: { color: 'white', fontWeight: '700' },
 
   button: {
     backgroundColor: '#0f6d5a',
