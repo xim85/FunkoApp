@@ -10,15 +10,14 @@ import {
 import { StatusBar } from 'expo-status-bar'
 import Header from './components/Header'
 
-import { auth, db } from './src/services/firebase'
+import { auth } from './src/services/firebase'
+import { onAuthStateChanged } from 'firebase/auth'
 import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  sendPasswordResetEmail
-} from 'firebase/auth'
-import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore'
+  registerWithEmail,
+  loginWithEmail,
+  logout,
+  sendReset
+} from './src/services/authService'
 
 export default function App() {
   // Form state
@@ -34,56 +33,19 @@ export default function App() {
     return unsub
   }, [])
 
-  // Ensures the Firestore profile document exists for the authenticated user.
-  // This covers cases where the Auth user exists but the Firestore doc is missing.
-  const ensureProfile = async (uid, fallbackEmail) => {
-    const ref = doc(db, 'users', uid)
-    const snap = await getDoc(ref)
-
-    if (!snap.exists()) {
-      // Default public visibility settings for the MVP
-      const visibility = { owned: true, duplicates: false, wishlist: false }
-
-      // Derived flag used for "Explore" queries (at least one section is public)
-      const hasPublicProfile =
-        visibility.owned || visibility.duplicates || visibility.wishlist
-
-      // Create the minimal profile document
-      await setDoc(ref, {
-        displayName: fallbackEmail ?? 'User',
-        visibility,
-        hasPublicProfile,
-        createdAt: serverTimestamp()
-      })
-    }
-  }
-
   // Registers a new user in Firebase Auth and creates the corresponding profile in Firestore
   const handleRegister = async () => {
     try {
-      const cred = await createUserWithEmailAndPassword(
-        auth,
-        email.trim(),
-        password
-      )
-
-      await ensureProfile(cred.user.uid, email.trim())
+      await registerWithEmail(email, password)
       Alert.alert('OK', 'User registered successfully')
     } catch (e) {
       Alert.alert('Registration error', String(e.message || e))
     }
   }
-
   // Signs in an existing user and ensures the profile doc exists
   const handleLogin = async () => {
     try {
-      const cred = await signInWithEmailAndPassword(
-        auth,
-        email.trim(),
-        password
-      )
-
-      await ensureProfile(cred.user.uid, cred.user.email)
+      await loginWithEmail(email, password)
       Alert.alert('OK', 'Signed in')
     } catch (e) {
       Alert.alert('Sign-in error', String(e.message || e))
@@ -99,7 +61,7 @@ export default function App() {
     }
 
     try {
-      await sendPasswordResetEmail(auth, trimmedEmail)
+      await sendReset(auth, trimmedEmail)
       Alert.alert('Email sent', 'Check your inbox to reset your password.')
     } catch (e) {
       Alert.alert('Reset error', String(e.message || e))
@@ -107,8 +69,12 @@ export default function App() {
   }
   // Ends the current session
   const handleLogout = async () => {
-    await signOut(auth)
-    Alert.alert('OK', 'Signed out')
+    try {
+      await logout()
+      Alert.alert('OK', 'Signed out')
+    } catch (e) {
+      Alert.alert('Error', String(e.message || e))
+    }
   }
 
   return (
