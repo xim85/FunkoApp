@@ -5,7 +5,8 @@ import {
   FlatList,
   StyleSheet,
   Pressable,
-  Alert
+  Alert,
+  TextInput
 } from 'react-native'
 import { auth } from '../services/firebase'
 import { subscribeItemsByStatus, updateItem } from '../services/itemsService'
@@ -13,6 +14,7 @@ import { subscribeItemsByStatus, updateItem } from '../services/itemsService'
 export default function WishlistScreen() {
   const uid = auth.currentUser?.uid
   const [items, setItems] = useState([])
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     if (!uid) return
@@ -39,15 +41,33 @@ export default function WishlistScreen() {
     ])
   }
 
+  const q = search.trim().toLowerCase()
+
+  const filteredItems = items.filter((it) => {
+    if (!q) return true
+    const name = (it.name ?? '').toLowerCase()
+    const series = (it.franchiseOrSeries ?? '').toLowerCase()
+    return name.includes(q) || series.includes(q)
+  })
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Wishlist</Text>
 
+      <TextInput
+        style={styles.search}
+        placeholder='Search by name or series...'
+        value={search}
+        onChangeText={setSearch}
+      />
+
       <FlatList
-        data={items}
+        data={filteredItems}
         keyExtractor={(item) => item.id}
         ListEmptyComponent={
-          <Text style={styles.empty}>No items in wishlist.</Text>
+          <Text style={styles.empty}>
+            {items.length === 0 ? 'No items in wishlist.' : 'No results.'}
+          </Text>
         }
         renderItem={({ item }) => (
           <View style={styles.card}>
@@ -90,5 +110,13 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center'
   },
-  smallButtonText: { color: 'white', fontWeight: '700' }
+  smallButtonText: { color: 'white', fontWeight: '700' },
+  search: {
+    width: '100%',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 12
+  }
 })
