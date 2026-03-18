@@ -8,7 +8,8 @@ import {
   orderBy,
   serverTimestamp,
   doc,
-  updateDoc
+  updateDoc,
+  deleteDoc
 } from 'firebase/firestore'
 
 // Returns the Firestore collection reference: users/{uid}/items
@@ -38,6 +39,12 @@ export async function updateItem(uid, itemId, data) {
     ...data,
     updatedAt: serverTimestamp()
   })
+}
+
+// Deletes an existing item document
+export async function deleteItem(uid, itemId) {
+  const ref = doc(db, 'users', uid, 'items', itemId)
+  await deleteDoc(ref)
 }
 
 // Real-time subscription to items filtered by status

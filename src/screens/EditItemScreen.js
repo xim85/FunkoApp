@@ -8,7 +8,7 @@ import {
   Alert
 } from 'react-native'
 import { auth } from '../services/firebase'
-import { updateItem } from '../services/itemsService'
+import { updateItem, deleteItem } from '../services/itemsService'
 
 export default function EditItemScreen({ navigation, route }) {
   const uid = auth.currentUser?.uid
@@ -78,6 +78,30 @@ export default function EditItemScreen({ navigation, route }) {
     }
   }
 
+  const handleDelete = () => {
+    if (!uid || !initial.id) return
+
+    Alert.alert(
+      'Delete item',
+      'Are you sure you want to delete this item? This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteItem(uid, initial.id)
+              navigation.goBack()
+            } catch (e) {
+              Alert.alert('Error', String(e.message || e))
+            }
+          }
+        }
+      ]
+    )
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Edit item</Text>
@@ -144,6 +168,10 @@ export default function EditItemScreen({ navigation, route }) {
       <Pressable style={styles.saveButton} onPress={handleSave}>
         <Text style={styles.saveButtonText}>Save changes</Text>
       </Pressable>
+
+      <Pressable style={styles.deleteButton} onPress={handleDelete}>
+        <Text style={styles.deleteButtonText}>Delete item</Text>
+      </Pressable>
     </View>
   )
 }
@@ -180,5 +208,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8
   },
-  saveButtonText: { color: 'white', fontWeight: '700' }
+  saveButtonText: { color: 'white', fontWeight: '700' },
+  deleteButton: {
+    backgroundColor: '#8b0000',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center'
+  },
+  deleteButtonText: { color: 'white', fontWeight: '700' }
 })
