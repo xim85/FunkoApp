@@ -30,13 +30,16 @@ export default function OwnedScreen({ navigation }) {
         keyExtractor={(item) => item.id}
         ListEmptyComponent={<Text style={styles.empty}>No items yet.</Text>}
         renderItem={({ item }) => (
-          <View style={styles.card}>
+          <Pressable
+            style={styles.card}
+            onPress={() => navigation.navigate('EditItem', { item })}
+          >
             <Text style={styles.name}>{item.name || '(No name)'}</Text>
             <Text style={styles.meta}>
               {item.franchiseOrSeries || '-'}{' '}
               {item.collectionNumber ? `#${item.collectionNumber}` : ''}
             </Text>
-          </View>
+          </Pressable>
         )}
       />
     </View>

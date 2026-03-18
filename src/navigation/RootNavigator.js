@@ -13,6 +13,7 @@ import DuplicatesScreen from '../screens/DuplicatesScreen'
 import ExploreScreen from '../screens/ExploreScreen'
 import ProfileScreen from '../screens/ProfileScreen'
 import AddItemScreen from '../screens/AddItemScreen'
+import EditItemScreen from '../screens/EditItemScreen'
 
 const Tab = createBottomTabNavigator()
 const Stack = createNativeStackNavigator()
@@ -47,6 +48,11 @@ function OwnedStackNavigator() {
         name='AddItem'
         component={AddItemScreen}
         options={{ title: 'Add item' }}
+      />
+      <OwnedStack.Screen
+        name='EditItem'
+        component={EditItemScreen}
+        options={{ title: 'Edit item' }}
       />
     </OwnedStack.Navigator>
   )
