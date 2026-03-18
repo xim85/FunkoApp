@@ -14,6 +14,7 @@ export default function OwnedScreen({ navigation }) {
   const uid = auth.currentUser?.uid
   const [items, setItems] = useState([])
   const [search, setSearch] = useState('')
+  const [sortMode, setSortMode] = useState('newest') // 'newest' | 'name'
 
   useEffect(() => {
     if (!uid) return
@@ -25,11 +26,19 @@ export default function OwnedScreen({ navigation }) {
 
   const filteredItems = items.filter((it) => {
     if (!q) return true
-
     const name = (it.name ?? '').toLowerCase()
     const series = (it.franchiseOrSeries ?? '').toLowerCase()
-
     return name.includes(q) || series.includes(q)
+  })
+
+  const displayItems = [...filteredItems].sort((a, b) => {
+    if (sortMode === 'name') {
+      const an = (a.name ?? '').toLowerCase()
+      const bn = (b.name ?? '').toLowerCase()
+      return an.localeCompare(bn)
+    }
+    // Default: keep Firestore order (createdAt desc)
+    return 0
   })
 
   return (
@@ -51,8 +60,27 @@ export default function OwnedScreen({ navigation }) {
         onChangeText={setSearch}
       />
 
+      <View style={styles.sortRow}>
+        <Pressable
+          style={[
+            styles.sortBtn,
+            sortMode === 'newest' && styles.sortBtnActive
+          ]}
+          onPress={() => setSortMode('newest')}
+        >
+          <Text style={styles.sortText}>Newest</Text>
+        </Pressable>
+
+        <Pressable
+          style={[styles.sortBtn, sortMode === 'name' && styles.sortBtnActive]}
+          onPress={() => setSortMode('name')}
+        >
+          <Text style={styles.sortText}>Name</Text>
+        </Pressable>
+      </View>
+
       <FlatList
-        data={filteredItems}
+        data={displayItems}
         keyExtractor={(item) => item.id}
         ListEmptyComponent={
           <Text style={styles.empty}>
@@ -103,5 +131,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     marginBottom: 12
-  }
+  },
+  sortRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
+  sortBtn: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0,0,0,0.08)',
+    alignItems: 'center'
+  },
+  sortBtnActive: { backgroundColor: '#0f6d5a' },
+  sortText: { fontWeight: '700', color: 'white' }
 })
