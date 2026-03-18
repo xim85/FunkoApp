@@ -18,7 +18,9 @@ export default function OwnedScreen({ navigation }) {
       <Text style={styles.title}>Owned</Text>
       <Pressable
         style={styles.addButton}
-        onPress={() => navigation.navigate('AddItem')}
+        onPress={() =>
+          navigation.navigate('AddItem', { initialStatus: 'owned' })
+        }
       >
         <Text style={styles.addButtonText}>Add item</Text>
       </Pressable>
