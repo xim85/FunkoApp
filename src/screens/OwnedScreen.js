@@ -21,9 +21,16 @@ export default function OwnedScreen({ navigation }) {
     return unsub
   }, [uid])
 
-  const filteredItems = items.filter((it) =>
-    (it.name ?? '').toLowerCase().includes(search.trim().toLowerCase())
-  )
+  const q = search.trim().toLowerCase()
+
+  const filteredItems = items.filter((it) => {
+    if (!q) return true
+
+    const name = (it.name ?? '').toLowerCase()
+    const series = (it.franchiseOrSeries ?? '').toLowerCase()
+
+    return name.includes(q) || series.includes(q)
+  })
 
   return (
     <View style={styles.container}>
@@ -39,7 +46,7 @@ export default function OwnedScreen({ navigation }) {
 
       <TextInput
         style={styles.search}
-        placeholder='Search by name...'
+        placeholder='Search by name or series...'
         value={search}
         onChangeText={setSearch}
       />
