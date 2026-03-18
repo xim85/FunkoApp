@@ -1,17 +1,29 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, FlatList, StyleSheet, Pressable } from 'react-native'
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  Pressable,
+  TextInput
+} from 'react-native'
 import { auth } from '../services/firebase'
 import { subscribeItemsByStatus } from '../services/itemsService'
 
 export default function OwnedScreen({ navigation }) {
   const uid = auth.currentUser?.uid
   const [items, setItems] = useState([])
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     if (!uid) return
     const unsub = subscribeItemsByStatus(uid, 'owned', setItems)
     return unsub
   }, [uid])
+
+  const filteredItems = items.filter((it) =>
+    (it.name ?? '').toLowerCase().includes(search.trim().toLowerCase())
+  )
 
   return (
     <View style={styles.container}>
@@ -25,10 +37,21 @@ export default function OwnedScreen({ navigation }) {
         <Text style={styles.addButtonText}>Add item</Text>
       </Pressable>
 
+      <TextInput
+        style={styles.search}
+        placeholder='Search by name...'
+        value={search}
+        onChangeText={setSearch}
+      />
+
       <FlatList
-        data={items}
+        data={filteredItems}
         keyExtractor={(item) => item.id}
-        ListEmptyComponent={<Text style={styles.empty}>No items yet.</Text>}
+        ListEmptyComponent={
+          <Text style={styles.empty}>
+            {items.length === 0 ? 'No items yet.' : 'No results.'}
+          </Text>
+        }
         renderItem={({ item }) => (
           <Pressable
             style={styles.card}
@@ -65,5 +88,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12
   },
-  addButtonText: { color: 'white', fontWeight: '700' }
+  addButtonText: { color: 'white', fontWeight: '700' },
+  search: {
+    width: '100%',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 12
+  }
 })
