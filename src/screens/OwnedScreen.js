@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, FlatList, StyleSheet } from 'react-native'
+import { View, Text, FlatList, StyleSheet, Pressable } from 'react-native'
 import { auth } from '../services/firebase'
 import { subscribeItemsByStatus } from '../services/itemsService'
 
-export default function OwnedScreen() {
+export default function OwnedScreen({ navigation }) {
   const uid = auth.currentUser?.uid
   const [items, setItems] = useState([])
 
@@ -16,6 +16,12 @@ export default function OwnedScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Owned</Text>
+      <Pressable
+        style={styles.addButton}
+        onPress={() => navigation.navigate('AddItem')}
+      >
+        <Text style={styles.addButtonText}>Add item</Text>
+      </Pressable>
 
       <FlatList
         data={items}
@@ -46,5 +52,13 @@ const styles = StyleSheet.create({
     marginBottom: 10
   },
   name: { fontWeight: '700' },
-  meta: { marginTop: 4, opacity: 0.8 }
+  meta: { marginTop: 4, opacity: 0.8 },
+  addButton: {
+    backgroundColor: '#0f6d5a',
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 12
+  },
+  addButtonText: { color: 'white', fontWeight: '700' }
 })
