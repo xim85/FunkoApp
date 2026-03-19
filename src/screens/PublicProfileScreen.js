@@ -7,8 +7,10 @@ export default function PublicProfileScreen({ route }) {
   const profileUid = user?.uid
 
   const [ownedItems, setOwnedItems] = useState([])
+  const [wishlistItems, setWishlistItems] = useState([])
 
   const ownedPublic = !!user?.visibility?.owned
+  const wishlistPublic = !!user?.visibility?.wishlist
 
   useEffect(() => {
     if (!profileUid) return
@@ -18,6 +20,18 @@ export default function PublicProfileScreen({ route }) {
     const unsub = subscribeItemsByStatus(profileUid, 'owned', setOwnedItems)
     return unsub
   }, [profileUid, ownedPublic])
+
+  useEffect(() => {
+    if (!profileUid) return
+    if (!wishlistPublic) return
+
+    const unsub = subscribeItemsByStatus(
+      profileUid,
+      'wishlist',
+      setWishlistItems
+    )
+    return unsub
+  }, [profileUid, wishlistPublic])
 
   return (
     <View style={styles.container}>
@@ -45,6 +59,30 @@ export default function PublicProfileScreen({ route }) {
         </>
       ) : (
         <Text style={styles.empty}>Owned section is private.</Text>
+      )}
+
+      {wishlistPublic ? (
+        <>
+          <Text style={styles.sectionTitle}>Wishlist</Text>
+          <FlatList
+            data={wishlistItems}
+            keyExtractor={(it) => it.id}
+            ListEmptyComponent={
+              <Text style={styles.empty}>No public wishlist items.</Text>
+            }
+            renderItem={({ item }) => (
+              <View style={styles.card}>
+                <Text style={styles.name}>{item.name || '(No name)'}</Text>
+                <Text style={styles.meta}>
+                  {item.franchiseOrSeries || '-'}{' '}
+                  {item.collectionNumber ? `#${item.collectionNumber}` : ''}
+                </Text>
+              </View>
+            )}
+          />
+        </>
+      ) : (
+        <Text style={styles.empty}>Wishlist section is private.</Text>
       )}
     </View>
   )
