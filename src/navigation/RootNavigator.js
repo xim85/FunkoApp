@@ -14,10 +14,12 @@ import ExploreScreen from '../screens/ExploreScreen'
 import ProfileScreen from '../screens/ProfileScreen'
 import AddItemScreen from '../screens/AddItemScreen'
 import EditItemScreen from '../screens/EditItemScreen'
+import PublicProfileScreen from '../screens/PublicProfileScreen'
 
 const Tab = createBottomTabNavigator()
 const Stack = createNativeStackNavigator()
 const OwnedStack = createNativeStackNavigator()
+const ExploreStack = createNativeStackNavigator()
 
 export default function RootNavigator() {
   const [user, setUser] = useState(null)
@@ -57,7 +59,22 @@ function OwnedStackNavigator() {
     </OwnedStack.Navigator>
   )
 }
-
+function ExploreStackNavigator() {
+  return (
+    <ExploreStack.Navigator>
+      <ExploreStack.Screen
+        name='ExploreList'
+        component={ExploreScreen}
+        options={{ title: 'Explore' }}
+      />
+      <ExploreStack.Screen
+        name='PublicProfile'
+        component={PublicProfileScreen}
+        options={{ title: 'Public profile' }}
+      />
+    </ExploreStack.Navigator>
+  )
+}
 function AppTabs() {
   return (
     <Tab.Navigator>
@@ -68,7 +85,11 @@ function AppTabs() {
       />
       <Tab.Screen name='Wishlist' component={WishlistScreen} />
       <Tab.Screen name='Duplicates' component={DuplicatesScreen} />
-      <Tab.Screen name='Explore' component={ExploreScreen} />
+      <Tab.Screen
+        name='Explore'
+        component={ExploreStackNavigator}
+        options={{ headerShown: false }}
+      />
       <Tab.Screen name='Profile' component={ProfileScreen} />
     </Tab.Navigator>
   )

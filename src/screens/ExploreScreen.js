@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, FlatList, StyleSheet } from 'react-native'
+import { View, Text, FlatList, StyleSheet, Pressable } from 'react-native'
 import { subscribePublicUsers } from '../services/exploreService'
 import { auth } from '../services/firebase'
 
-export default function ExploreScreen() {
+export default function ExploreScreen({ navigation }) {
   const currentUid = auth.currentUser?.uid
   const [users, setUsers] = useState([])
 
@@ -26,9 +26,12 @@ export default function ExploreScreen() {
           <Text style={styles.empty}>No public users found.</Text>
         }
         renderItem={({ item }) => (
-          <View style={styles.card}>
+          <Pressable
+            style={styles.card}
+            onPress={() => navigation.navigate('PublicProfile', { user: item })}
+          >
             <Text style={styles.name}>{item.displayName || 'User'}</Text>
-          </View>
+          </Pressable>
         )}
       />
     </View>
