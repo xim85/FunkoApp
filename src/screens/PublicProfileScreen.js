@@ -1,13 +1,51 @@
-import React from 'react'
-import { View, Text, StyleSheet } from 'react-native'
+import React, { useEffect, useState } from 'react'
+import { View, Text, FlatList, StyleSheet } from 'react-native'
+import { subscribeItemsByStatus } from '../services/itemsService'
 
 export default function PublicProfileScreen({ route }) {
-  const user = route?.params?.user
+  const user = route?.params?.user // user picked from Explore list
+  const profileUid = user?.uid
+
+  const [ownedItems, setOwnedItems] = useState([])
+
+  const ownedPublic = !!user?.visibility?.owned
+
+  useEffect(() => {
+    if (!profileUid) return
+    if (!ownedPublic) return
+
+    // Reads only "owned" items from the other user's items subcollection
+    const unsub = subscribeItemsByStatus(profileUid, 'owned', setOwnedItems)
+    return unsub
+  }, [profileUid, ownedPublic])
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{user?.displayName || 'Public profile'}</Text>
-      <Text style={styles.meta}>UID: {user?.uid}</Text>
+
+      {ownedPublic ? (
+        <>
+          <Text style={styles.sectionTitle}>Owned</Text>
+          <FlatList
+            data={ownedItems}
+            keyExtractor={(it) => it.id}
+            ListEmptyComponent={
+              <Text style={styles.empty}>No public owned items.</Text>
+            }
+            renderItem={({ item }) => (
+              <View style={styles.card}>
+                <Text style={styles.name}>{item.name || '(No name)'}</Text>
+                <Text style={styles.meta}>
+                  {item.franchiseOrSeries || '-'}{' '}
+                  {item.collectionNumber ? `#${item.collectionNumber}` : ''}
+                </Text>
+              </View>
+            )}
+          />
+        </>
+      ) : (
+        <Text style={styles.empty}>Owned section is private.</Text>
+      )}
     </View>
   )
 }
@@ -15,5 +53,14 @@ export default function PublicProfileScreen({ route }) {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, gap: 10 },
   title: { fontSize: 20, fontWeight: '700' },
-  meta: { opacity: 0.7 }
+  sectionTitle: { marginTop: 8, fontWeight: '700', fontSize: 16 },
+  empty: { opacity: 0.7, marginTop: 10 },
+  card: {
+    padding: 12,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0,0,0,0.06)',
+    marginBottom: 10
+  },
+  name: { fontWeight: '700' },
+  meta: { marginTop: 4, opacity: 0.8 }
 })
