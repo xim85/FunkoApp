@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { View, Text, FlatList, StyleSheet } from 'react-native'
 import { subscribeItemsByStatus } from '../services/itemsService'
 
@@ -11,6 +11,7 @@ export default function PublicProfileScreen({ route }) {
 
   const ownedPublic = !!user?.visibility?.owned
   const wishlistPublic = !!user?.visibility?.wishlist
+  const duplicatesPublic = !!user?.visibility?.duplicates
 
   useEffect(() => {
     if (!profileUid) return
@@ -32,6 +33,28 @@ export default function PublicProfileScreen({ route }) {
     )
     return unsub
   }, [profileUid, wishlistPublic])
+
+  const duplicateGroups = useMemo(() => {
+    if (!duplicatesPublic) return []
+    // Duplicates are derived from owned items, so we need owned data
+    if (!ownedPublic) return []
+
+    const map = new Map()
+
+    for (const it of ownedItems) {
+      const name = (it.name ?? '').trim().toLowerCase()
+      const series = (it.franchiseOrSeries ?? '').trim().toLowerCase()
+      const number = (it.collectionNumber ?? '').trim().toLowerCase()
+      const key = `${name}__${series}__${number}`
+
+      if (!map.has(key)) map.set(key, [])
+      map.get(key).push(it)
+    }
+
+    return Array.from(map.entries())
+      .filter(([, arr]) => arr.length > 1)
+      .map(([key, arr]) => ({ key, items: arr }))
+  }, [ownedItems, ownedPublic, duplicatesPublic])
 
   return (
     <View style={styles.container}>
@@ -83,6 +106,38 @@ export default function PublicProfileScreen({ route }) {
         </>
       ) : (
         <Text style={styles.empty}>Wishlist section is private.</Text>
+      )}
+
+      {duplicatesPublic ? (
+        <>
+          <Text style={styles.sectionTitle}>Duplicates</Text>
+          <FlatList
+            data={duplicateGroups}
+            keyExtractor={(g) => g.key}
+            ListEmptyComponent={
+              <Text style={styles.empty}>No public duplicates.</Text>
+            }
+            renderItem={({ item: group }) => {
+              const first = group.items[0]
+              return (
+                <View style={styles.card}>
+                  <Text style={styles.name}>
+                    {first?.name || '(No name)'}{' '}
+                    {first?.collectionNumber
+                      ? `#${first.collectionNumber}`
+                      : ''}
+                  </Text>
+                  <Text style={styles.meta}>
+                    {first?.franchiseOrSeries || '-'}
+                  </Text>
+                  <Text style={styles.meta}>Count: {group.items.length}</Text>
+                </View>
+              )
+            }}
+          />
+        </>
+      ) : (
+        <Text style={styles.empty}>Duplicates section is private.</Text>
       )}
     </View>
   )
