@@ -15,6 +15,7 @@ import ProfileScreen from '../screens/ProfileScreen'
 import AddItemScreen from '../screens/AddItemScreen'
 import EditItemScreen from '../screens/EditItemScreen'
 import PublicProfileScreen from '../screens/PublicProfileScreen'
+import BarcodeScannerScreen from '../screens/BarcodeScannerScreen'
 
 const Tab = createBottomTabNavigator()
 const Stack = createNativeStackNavigator()
@@ -55,6 +56,11 @@ function OwnedStackNavigator() {
         name='EditItem'
         component={EditItemScreen}
         options={{ title: 'Edit item' }}
+      />
+      <OwnedStack.Screen
+        name='ScanBarcode'
+        component={BarcodeScannerScreen}
+        options={{ title: 'Scan barcode' }}
       />
     </OwnedStack.Navigator>
   )

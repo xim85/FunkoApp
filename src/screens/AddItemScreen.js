@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   View,
   Text,
@@ -22,6 +22,12 @@ export default function AddItemScreen({ navigation, route }) {
   const [status, setStatus] = useState(initialStatus)
   const [barcode, setBarcode] = useState('')
   const [notes, setNotes] = useState('')
+
+  // ✅ AQUÍ: justo después de los useState (antes de handleSave)
+  useEffect(() => {
+    const incoming = route?.params?.barcode
+    if (incoming) setBarcode(String(incoming))
+  }, [route?.params?.barcode])
 
   const handleSave = async () => {
     if (!uid) {
@@ -55,6 +61,7 @@ export default function AddItemScreen({ navigation, route }) {
       Alert.alert('Error', String(e.message || e))
     }
   }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Add item</Text>
@@ -103,6 +110,14 @@ export default function AddItemScreen({ navigation, route }) {
         </Pressable>
       </View>
 
+      {/* ✅ AQUÍ: botón para abrir el escáner, antes del input de barcode */}
+      <Pressable
+        style={styles.scanButton}
+        onPress={() => navigation.navigate('ScanBarcode')}
+      >
+        <Text style={styles.scanButtonText}>Scan barcode</Text>
+      </Pressable>
+
       <TextInput
         style={styles.input}
         placeholder='Barcode (optional)'
@@ -149,6 +164,14 @@ const styles = StyleSheet.create({
   },
   statusBtnActive: { backgroundColor: '#0f6d5a' },
   statusText: { fontWeight: '700', color: 'white' },
+
+  scanButton: {
+    backgroundColor: 'rgba(0,0,0,0.08)',
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center'
+  },
+  scanButtonText: { fontWeight: '700' },
 
   saveButton: {
     backgroundColor: '#0f6d5a',
