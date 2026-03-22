@@ -9,12 +9,15 @@ import {
 } from 'react-native'
 import { auth } from '../services/firebase'
 import { addItem } from '../services/itemsService'
+import { lookupBarcode } from '../services/upcProxyService'
 
 export default function AddItemScreen({ navigation, route }) {
   const uid = auth.currentUser?.uid
 
   // Optional: allow parent screen to prefill a default status
   const initialStatus = route?.params?.initialStatus ?? 'owned'
+  const [lookupLoading, setLookupLoading] = useState(false)
+  const [lookupMsg, setLookupMsg] = useState('')
 
   const [name, setName] = useState('')
   const [franchiseOrSeries, setFranchiseOrSeries] = useState('')
@@ -23,11 +26,51 @@ export default function AddItemScreen({ navigation, route }) {
   const [barcode, setBarcode] = useState('')
   const [notes, setNotes] = useState('')
 
-  // ✅ AQUÍ: justo después de los useState (antes de handleSave)
   useEffect(() => {
     const incoming = route?.params?.barcode
     if (incoming) setBarcode(String(incoming))
   }, [route?.params?.barcode])
+
+  useEffect(() => {
+    const b = barcode.trim()
+    if (b.length < 8) {
+      setLookupMsg('')
+      return
+    }
+
+    let cancelled = false
+    const t = setTimeout(async () => {
+      try {
+        setLookupLoading(true)
+        setLookupMsg('Looking up...')
+
+        const data = await lookupBarcode(b)
+        if (cancelled) return
+
+        if (!data?.found) {
+          setLookupMsg('Not found. Fill manually.')
+          return
+        }
+
+        // Solo rellenamos si el usuario aún no ha escrito nada
+        if (data.title && !name.trim()) setName(data.title)
+        if (data.brand && !franchiseOrSeries.trim())
+          setFranchiseOrSeries(data.brand)
+
+        setLookupMsg('Autofilled from barcode.')
+      } catch (e) {
+        if (cancelled) return
+        setLookupMsg(`Lookup error: ${String(e.message || e)}`)
+      } finally {
+        if (!cancelled) setLookupLoading(false)
+      }
+    }, 400) // debounce para evitar spam
+
+    return () => {
+      cancelled = true
+      clearTimeout(t)
+    }
+  }, [barcode])
 
   const handleSave = async () => {
     if (!uid) {
@@ -125,6 +168,8 @@ export default function AddItemScreen({ navigation, route }) {
         onChangeText={setBarcode}
       />
 
+      {lookupMsg ? <Text style={styles.lookupMsg}>{lookupMsg}</Text> : null}
+
       <TextInput
         style={[styles.input, styles.notes]}
         placeholder='Notes (optional)'
@@ -180,5 +225,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8
   },
-  saveButtonText: { color: 'white', fontWeight: '700' }
+  saveButtonText: { color: 'white', fontWeight: '700' },
+  lookupMsg: { color: '#444' }
 })
