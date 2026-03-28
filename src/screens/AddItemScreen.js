@@ -25,6 +25,7 @@ export default function AddItemScreen({ navigation, route }) {
   const [status, setStatus] = useState(initialStatus)
   const [barcode, setBarcode] = useState('')
   const [notes, setNotes] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
 
   useEffect(() => {
     const incoming = route?.params?.barcode
@@ -52,10 +53,13 @@ export default function AddItemScreen({ navigation, route }) {
           return
         }
 
-        // Solo rellenamos si el usuario aún no ha escrito nada
+        const firstImg = data?.images?.[0]
+        if (firstImg && !imageUrl.trim()) setImageUrl(firstImg)
+
         if (data.title && !name.trim()) setName(data.title)
-        if (data.brand && !franchiseOrSeries.trim())
+        if (data.brand && !franchiseOrSeries.trim()) {
           setFranchiseOrSeries(data.brand)
+        }
 
         setLookupMsg('Autofilled from barcode.')
       } catch (e) {
@@ -96,6 +100,7 @@ export default function AddItemScreen({ navigation, route }) {
         collectionNumber: collectionNumber.trim(),
         status,
         barcode: barcode.trim(),
+        imageUrl: imageUrl.trim(),
         notes: notes.trim()
       })
 
@@ -153,7 +158,6 @@ export default function AddItemScreen({ navigation, route }) {
         </Pressable>
       </View>
 
-      {/* ✅ AQUÍ: botón para abrir el escáner, antes del input de barcode */}
       <Pressable
         style={styles.scanButton}
         onPress={() => navigation.navigate('ScanBarcode')}
@@ -168,7 +172,15 @@ export default function AddItemScreen({ navigation, route }) {
         onChangeText={setBarcode}
       />
 
+      {lookupLoading ? <Text style={styles.lookupMsg}>Loading...</Text> : null}
       {lookupMsg ? <Text style={styles.lookupMsg}>{lookupMsg}</Text> : null}
+
+      <TextInput
+        style={styles.input}
+        placeholder='Image URL (optional)'
+        value={imageUrl}
+        onChangeText={setImageUrl}
+      />
 
       <TextInput
         style={[styles.input, styles.notes]}
