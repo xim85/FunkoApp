@@ -5,7 +5,8 @@ import {
   FlatList,
   StyleSheet,
   Pressable,
-  TextInput
+  TextInput,
+  Image
 } from 'react-native'
 import { auth } from '../services/firebase'
 import { subscribeItemsByStatus } from '../services/itemsService'
@@ -92,11 +93,24 @@ export default function OwnedScreen({ navigation }) {
             style={styles.card}
             onPress={() => navigation.navigate('EditItem', { item })}
           >
-            <Text style={styles.name}>{item.name || '(No name)'}</Text>
-            <Text style={styles.meta}>
-              {item.franchiseOrSeries || '-'}{' '}
-              {item.collectionNumber ? `#${item.collectionNumber}` : ''}
-            </Text>
+            {item.imageUrl ? (
+              <Image
+                source={{ uri: item.imageUrl }}
+                style={styles.thumbnail}
+                resizeMode='contain'
+              />
+            ) : (
+              <View style={styles.thumbnailPlaceholder}>
+                <Text>?</Text>
+              </View>
+            )}
+            <View style={styles.cardInfo}>
+              <Text style={styles.name}>{item.name}</Text>
+              <Text style={styles.meta}>
+                {item.franchiseOrSeries || '-'}{' '}
+                {item.collectionNumber ? `#${item.collectionNumber}` : ''}
+              </Text>
+            </View>
           </Pressable>
         )}
       />
@@ -109,7 +123,10 @@ const styles = StyleSheet.create({
   title: { fontSize: 20, fontWeight: '700', marginBottom: 12 },
   empty: { opacity: 0.7, marginTop: 12 },
   card: {
-    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 10,
     borderRadius: 10,
     backgroundColor: 'rgba(0,0,0,0.06)',
     marginBottom: 10
@@ -141,5 +158,20 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   sortBtnActive: { backgroundColor: '#0f6d5a' },
-  sortText: { fontWeight: '700', color: 'white' }
+  sortText: { fontWeight: '700', color: 'white' },
+  thumbnail: {
+    width: 64,
+    height: 64,
+    borderRadius: 8,
+    backgroundColor: 'white'
+  },
+  thumbnailPlaceholder: {
+    width: 64,
+    height: 64,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0,0,0,0.08)',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  cardInfo: { flex: 1 }
 })
