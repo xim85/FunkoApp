@@ -11,14 +11,77 @@ import { auth } from '../services/firebase'
 import { addItem } from '../services/itemsService'
 import { lookupBarcode } from '../services/upcProxyService'
 
+const parseFunkoTitle = (title) => {
+  if (!title) return { name: null, franchise: null, number: null }
+
+  // Extract number: works with "#166" or bare "375" at the end
+  const numberWithHash = title.match(/#(\d+)/)
+  const numberAtEnd = title.match(/\s(\d+)\s*$/)
+  const number = numberWithHash
+    ? numberWithHash[1]
+    : numberAtEnd
+      ? numberAtEnd[1]
+      : null
+
+  // Remove all known Funko prefixes
+  const cleaned = title
+    .replace(/^Funko\s+(Pop!?|Collectible\s+Vinyl\s+Figures?|POP!?)\s*/i, '')
+    .replace(/#\d+/, '')
+    .replace(/\s\d+\s*$/, '')
+    .trim()
+
+  // Format 1: "TV: Wednesday - Wednesday Vinyl Figure"
+  if (cleaned.includes(':')) {
+    const parts = cleaned.split(':')
+    const franchise = parts[0].trim()
+    const rawName = parts.slice(1).join(':').trim()
+
+    // Clean "Wednesday - Wednesday Vinyl Figure" → "Wednesday"
+    const nameMatch = rawName.match(/^([^-]+?)\s*-\s*.+$/)
+    const name = nameMatch ? nameMatch[1].trim() : rawName
+
+    return { franchise, name, number }
+  }
+
+  // Format 2: "Disney Mulan" (no colon, known Disney/Marvel/etc prefix)
+  const knownFranchises = [
+    'Disney',
+    'Marvel',
+    'DC',
+    'Star Wars',
+    'Harry Potter',
+    'Nintendo',
+    'Royals',
+    'TV',
+    'Movies',
+    'Animation',
+    'Games',
+    'Sports',
+    'Music',
+    'Ad Icons'
+  ]
+
+  for (const franchise of knownFranchises) {
+    if (cleaned.toLowerCase().startsWith(franchise.toLowerCase())) {
+      const name = cleaned.slice(franchise.length).trim()
+      return { franchise, name: name || null, number }
+    }
+  }
+
+  // Fallback: return everything as name
+  return { franchise: null, name: cleaned, number }
+}
+
 export default function AddItemScreen({ navigation, route }) {
+  // Get the current user's ID from Firebase Auth
   const uid = auth.currentUser?.uid
 
-  // Optional: allow parent screen to prefill a default status
+  // Allow other screens to pre-select a status when navigating here
   const initialStatus = route?.params?.initialStatus ?? 'owned'
+  // Lookup state: tracks loading and feedback message
   const [lookupLoading, setLookupLoading] = useState(false)
   const [lookupMsg, setLookupMsg] = useState('')
-
+  // Form fields
   const [name, setName] = useState('')
   const [franchiseOrSeries, setFranchiseOrSeries] = useState('')
   const [collectionNumber, setCollectionNumber] = useState('')
@@ -27,25 +90,30 @@ export default function AddItemScreen({ navigation, route }) {
   const [notes, setNotes] = useState('')
   const [imageUrl, setImageUrl] = useState('')
 
+  // If the barcode scanner screen passed a barcode back, fill it in
   useEffect(() => {
     const incoming = route?.params?.barcode
     if (incoming) setBarcode(String(incoming))
   }, [route?.params?.barcode])
 
+  // Whenever the barcode changes, try to autofill the form via the proxy API
   useEffect(() => {
     const b = barcode.trim()
+    // Skip lookup for short barcodes
     if (b.length < 8) {
       setLookupMsg('')
       return
     }
 
     let cancelled = false
+    // Debounce: wait 400ms before firing to avoid spamming the API
     const t = setTimeout(async () => {
       try {
         setLookupLoading(true)
         setLookupMsg('Looking up...')
 
         const data = await lookupBarcode(b)
+        console.log('API response:', JSON.stringify(data, null, 2))
         if (cancelled) return
 
         if (!data?.found) {
@@ -53,12 +121,28 @@ export default function AddItemScreen({ navigation, route }) {
           return
         }
 
+        // Use the first image returned, only if the field is still empty
         const firstImg = data?.images?.[0]
         if (firstImg && !imageUrl.trim()) setImageUrl(firstImg)
 
-        if (data.title && !name.trim()) setName(data.title)
-        if (data.brand && !franchiseOrSeries.trim()) {
-          setFranchiseOrSeries(data.brand)
+        // Parse the Funko title to extract name, franchise and number
+        const parsed = parseFunkoTitle(data.title)
+
+        // Only autofill fields the user hasn't already typed in
+        if (parsed.name && !name.trim()) {
+          setName(parsed.name)
+        }
+
+        if (!franchiseOrSeries.trim()) {
+          if (parsed.franchise) {
+            setFranchiseOrSeries(parsed.franchise)
+          } else if (data.brand) {
+            setFranchiseOrSeries(data.brand)
+          }
+        }
+
+        if (parsed.number && !collectionNumber.trim()) {
+          setCollectionNumber(parsed.number)
         }
 
         setLookupMsg('Autofilled from barcode.')
@@ -68,14 +152,15 @@ export default function AddItemScreen({ navigation, route }) {
       } finally {
         if (!cancelled) setLookupLoading(false)
       }
-    }, 400) // debounce para evitar spam
-
+    }, 400)
+    // Cleanup: cancel the timeout and ignore stale responses
     return () => {
       cancelled = true
       clearTimeout(t)
     }
   }, [barcode])
 
+  // Validate the form and save the item to Firestore
   const handleSave = async () => {
     if (!uid) {
       Alert.alert('Error', 'You must be signed in.')
