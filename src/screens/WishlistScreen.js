@@ -6,20 +6,58 @@ import {
   StyleSheet,
   Pressable,
   Alert,
-  TextInput
+  TextInput,
+  Image
 } from 'react-native'
 import { auth } from '../services/firebase'
-import { subscribeItemsByStatus, updateItem } from '../services/itemsService'
+import {
+  subscribeItemsByStatus,
+  updateItem,
+  addToWishlistFromDiscover
+} from '../services/itemsService'
+import {
+  subscribePublicUsers,
+  subscribePublicItemsByUser
+} from '../services/exploreService'
 
 export default function WishlistScreen() {
   const uid = auth.currentUser?.uid
   const [items, setItems] = useState([])
   const [search, setSearch] = useState('')
-  const [sortMode, setSortMode] = useState('newest') // 'newest' | 'name'
+  const [sortMode, setSortMode] = useState('newest')
+  const [discoverItems, setDiscoverItems] = useState([])
 
   useEffect(() => {
     if (!uid) return
     const unsub = subscribeItemsByStatus(uid, 'wishlist', setItems)
+    return unsub
+  }, [uid])
+
+  useEffect(() => {
+    if (!uid) return
+
+    // Get all public users first
+    const unsub = subscribePublicUsers((users) => {
+      // Filter out the current user
+      const others = users.filter((u) => u.uid !== uid)
+      if (others.length === 0) {
+        setDiscoverItems([])
+        return
+      }
+
+      // Subscribe to each user's public items
+      const allItems = {}
+      const unsubs = others.map((u) =>
+        subscribePublicItemsByUser(u.uid, (items) => {
+          allItems[u.uid] = items
+          // Merge all items into a flat list
+          setDiscoverItems(Object.values(allItems).flat())
+        })
+      )
+
+      return () => unsubs.forEach((u) => u())
+    })
+
     return unsub
   }, [uid])
 
@@ -42,7 +80,23 @@ export default function WishlistScreen() {
     ])
   }
 
+  const handleAddToWishlist = async (item) => {
+    try {
+      await addToWishlistFromDiscover(uid, item)
+      Alert.alert('Added!', `${item.name} added to your wishlist.`)
+    } catch (e) {
+      Alert.alert('Error', String(e.message || e))
+    }
+  }
+
   const q = search.trim().toLowerCase()
+
+  const filteredDiscoverItems = discoverItems.filter((it) => {
+    if (!q) return true
+    const name = (it.name ?? '').toLowerCase()
+    const series = (it.franchiseOrSeries ?? '').toLowerCase()
+    return name.includes(q) || series.includes(q)
+  })
 
   const filteredItems = items.filter((it) => {
     if (!q) return true
@@ -100,20 +154,73 @@ export default function WishlistScreen() {
         }
         renderItem={({ item }) => (
           <View style={styles.card}>
-            <Text style={styles.name}>{item.name || '(No name)'}</Text>
-            <Text style={styles.meta}>
-              {item.franchiseOrSeries || '-'}{' '}
-              {item.collectionNumber ? `#${item.collectionNumber}` : ''}
-            </Text>
-
-            <Pressable
-              style={styles.smallButton}
-              onPress={() => confirmMoveToOwned(item)}
-            >
-              <Text style={styles.smallButtonText}>Mark as owned</Text>
-            </Pressable>
+            {item.imageUrl ? (
+              <Image
+                source={{ uri: item.imageUrl }}
+                style={styles.thumbnail}
+                resizeMode='contain'
+              />
+            ) : (
+              <View style={styles.thumbnailPlaceholder}>
+                <Text style={styles.thumbnailPlaceholderText}>?</Text>
+              </View>
+            )}
+            <View style={styles.cardInfo}>
+              <Text style={styles.name}>{item.name || '(No name)'}</Text>
+              <Text style={styles.meta}>
+                {item.franchiseOrSeries || '-'}{' '}
+                {item.collectionNumber ? `#${item.collectionNumber}` : ''}
+              </Text>
+              <Pressable
+                style={styles.smallButton}
+                onPress={() => confirmMoveToOwned(item)}
+              >
+                <Text style={styles.smallButtonText}>Mark as owned</Text>
+              </Pressable>
+            </View>
           </View>
         )}
+        ListFooterComponent={
+          filteredDiscoverItems.length > 0 ? (
+            <View>
+              <Text style={styles.discoverTitle}>Discover</Text>
+              <Text style={styles.discoverSubtitle}>From other collectors</Text>
+              {filteredDiscoverItems.map((item) => (
+                <View
+                  key={`${item.ownerUid}-${item.id}`}
+                  style={styles.discoverCard}
+                >
+                  {item.imageUrl ? (
+                    <Image
+                      source={{ uri: item.imageUrl }}
+                      style={styles.thumbnail}
+                      resizeMode='contain'
+                    />
+                  ) : (
+                    <View style={styles.thumbnailPlaceholder}>
+                      <Text style={styles.thumbnailPlaceholderText}>?</Text>
+                    </View>
+                  )}
+                  <View style={styles.cardInfo}>
+                    <Text style={styles.name}>{item.name || '(No name)'}</Text>
+                    <Text style={styles.meta}>
+                      {item.franchiseOrSeries || '-'}{' '}
+                      {item.collectionNumber ? `#${item.collectionNumber}` : ''}
+                    </Text>
+                    <Pressable
+                      style={styles.smallButton}
+                      onPress={() => handleAddToWishlist(item)}
+                    >
+                      <Text style={styles.smallButtonText}>
+                        + Add to wishlist
+                      </Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : null
+        }
       />
     </View>
   )
@@ -124,7 +231,10 @@ const styles = StyleSheet.create({
   title: { fontSize: 20, fontWeight: '700', marginBottom: 12 },
   empty: { opacity: 0.7, marginTop: 12 },
   card: {
-    padding: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 10,
     borderRadius: 10,
     backgroundColor: 'rgba(0,0,0,0.06)',
     marginBottom: 10
@@ -157,5 +267,43 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   sortBtnActive: { backgroundColor: '#0f6d5a' },
-  sortText: { fontWeight: '700', color: 'white' }
+  sortText: { fontWeight: '700', color: 'white' },
+  discoverTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginTop: 24,
+    marginBottom: 4
+  },
+  discoverSubtitle: {
+    opacity: 0.5,
+    marginBottom: 12,
+    fontSize: 12
+  },
+  discoverCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0,0,0,0.04)',
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)'
+  },
+  thumbnail: {
+    width: 64,
+    height: 64,
+    borderRadius: 8,
+    backgroundColor: 'white'
+  },
+  thumbnailPlaceholder: {
+    width: 64,
+    height: 64,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0,0,0,0.08)',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  thumbnailPlaceholderText: { fontSize: 24, opacity: 0.3 },
+  cardInfo: { flex: 1 }
 })

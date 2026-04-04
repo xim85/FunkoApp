@@ -47,6 +47,21 @@ export async function deleteItem(uid, itemId) {
   await deleteDoc(ref)
 }
 
+// Adds a discovered item directly to the user's wishlist
+export async function addToWishlistFromDiscover(uid, item) {
+  return addDoc(itemsCol(uid), {
+    name: item.name ?? '',
+    franchiseOrSeries: item.franchiseOrSeries ?? '',
+    collectionNumber: item.collectionNumber ?? '',
+    status: 'wishlist',
+    barcode: item.barcode ?? '',
+    imageUrl: item.imageUrl ?? '',
+    notes: '',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  })
+}
+
 // Real-time subscription to items filtered by status
 export function subscribeItemsByStatus(uid, status, callback) {
   const q = query(
