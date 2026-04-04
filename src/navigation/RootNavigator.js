@@ -20,6 +20,7 @@ import BarcodeScannerScreen from '../screens/BarcodeScannerScreen'
 const Tab = createBottomTabNavigator()
 const Stack = createNativeStackNavigator()
 const OwnedStack = createNativeStackNavigator()
+const WishlistStack = createNativeStackNavigator()
 const ExploreStack = createNativeStackNavigator()
 
 export default function RootNavigator() {
@@ -37,6 +38,33 @@ export default function RootNavigator() {
   if (loading) return null
 
   return user ? <AppTabs /> : <AuthStack />
+}
+
+function WishlistStackNavigator() {
+  return (
+    <WishlistStack.Navigator>
+      <WishlistStack.Screen
+        name='WishlistList'
+        component={WishlistScreen}
+        options={{ title: 'Wishlist' }}
+      />
+      <WishlistStack.Screen
+        name='AddItem'
+        component={AddItemScreen}
+        options={{ title: 'Add item' }}
+      />
+      <WishlistStack.Screen
+        name='EditItem'
+        component={EditItemScreen}
+        options={{ title: 'Edit item' }}
+      />
+      <WishlistStack.Screen
+        name='ScanBarcode'
+        component={BarcodeScannerScreen}
+        options={{ title: 'Scan barcode' }}
+      />
+    </WishlistStack.Navigator>
+  )
 }
 
 function OwnedStackNavigator() {
@@ -89,7 +117,11 @@ function AppTabs() {
         component={OwnedStackNavigator}
         options={{ headerShown: false }}
       />
-      <Tab.Screen name='Wishlist' component={WishlistScreen} />
+      <Tab.Screen
+        name='Wishlist'
+        component={WishlistStackNavigator}
+        options={{ headerShown: false }}
+      />
       <Tab.Screen name='Duplicates' component={DuplicatesScreen} />
       <Tab.Screen
         name='Explore'

@@ -20,7 +20,7 @@ import {
   subscribePublicItemsByUser
 } from '../services/exploreService'
 
-export default function WishlistScreen() {
+export default function WishlistScreen({ navigation }) {
   const uid = auth.currentUser?.uid
   const [items, setItems] = useState([])
   const [search, setSearch] = useState('')
@@ -118,6 +118,15 @@ export default function WishlistScreen() {
     <View style={styles.container}>
       <Text style={styles.title}>Wishlist</Text>
 
+      <Pressable
+        style={styles.addButton}
+        onPress={() =>
+          navigation.navigate('AddItem', { initialStatus: 'wishlist' })
+        }
+      >
+        <Text style={styles.addButtonText}>Add item</Text>
+      </Pressable>
+
       <TextInput
         style={styles.search}
         placeholder='Search by name or series...'
@@ -153,7 +162,10 @@ export default function WishlistScreen() {
           </Text>
         }
         renderItem={({ item }) => (
-          <View style={styles.card}>
+          <Pressable
+            style={styles.card}
+            onPress={() => navigation.navigate('EditItem', { item })}
+          >
             {item.imageUrl ? (
               <Image
                 source={{ uri: item.imageUrl }}
@@ -173,12 +185,15 @@ export default function WishlistScreen() {
               </Text>
               <Pressable
                 style={styles.smallButton}
-                onPress={() => confirmMoveToOwned(item)}
+                onPress={(e) => {
+                  e.stopPropagation?.()
+                  confirmMoveToOwned(item)
+                }}
               >
                 <Text style={styles.smallButtonText}>Mark as owned</Text>
               </Pressable>
             </View>
-          </View>
+          </Pressable>
         )}
         ListFooterComponent={
           filteredDiscoverItems.length > 0 ? (
@@ -257,6 +272,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     marginBottom: 12
+  },
+  addButton: {
+    backgroundColor: '#0f6d5a',
+    paddingVertical: 10,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 12
+  },
+  addButtonText: {
+    color: 'white',
+    fontWeight: '700'
   },
   sortRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
   sortBtn: {
