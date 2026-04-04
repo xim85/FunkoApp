@@ -6,6 +6,7 @@ import {
   sendPasswordResetEmail
 } from 'firebase/auth'
 import { doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore'
+import { computeHasPublicProfile } from './usersService'
 
 // Ensures a Firestore user profile exists for the given uid
 export async function ensureUserProfile(uid, fallbackEmail) {
@@ -15,13 +16,11 @@ export async function ensureUserProfile(uid, fallbackEmail) {
   if (snap.exists()) return
 
   const visibility = { owned: true, duplicates: false, wishlist: false }
-  const hasPublicProfile =
-    visibility.owned || visibility.duplicates || visibility.wishlist
 
   await setDoc(ref, {
     displayName: fallbackEmail ?? 'User',
     visibility,
-    hasPublicProfile,
+    hasPublicProfile: computeHasPublicProfile(visibility),
     createdAt: serverTimestamp()
   })
 }

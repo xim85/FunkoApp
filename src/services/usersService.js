@@ -2,7 +2,7 @@ import { db } from './firebase'
 import { doc, onSnapshot, updateDoc } from 'firebase/firestore'
 
 // Computes whether the user has at least one public section enabled
-function computeHasPublicProfile(visibility) {
+export function computeHasPublicProfile(visibility) {
   return !!(visibility?.owned || visibility?.duplicates || visibility?.wishlist)
 }
 
