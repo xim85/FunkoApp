@@ -70,8 +70,18 @@ export function subscribeItemsByStatus(uid, status, callback) {
     orderBy('createdAt', 'desc')
   )
 
-  return onSnapshot(q, (snap) => {
-    const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
-    callback(items)
-  })
+  return onSnapshot(
+    q,
+    (snap) => {
+      const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+      callback(items)
+    },
+    (error) => {
+      // Ignore permission errors that happen on logout
+      if (error.code === 'permission-denied') {
+        return
+      }
+      console.error('subscribeItemsByStatus error:', error)
+    }
+  )
 }
