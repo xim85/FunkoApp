@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { onAuthStateChanged } from 'firebase/auth'
 import { auth } from '../services/firebase'
+import { Ionicons } from '@expo/vector-icons'
 
 import LoginScreen from '../screens/LoginScreen'
 import RegisterScreen from '../screens/RegisterScreen'
@@ -111,7 +112,29 @@ function ExploreStackNavigator() {
 }
 function AppTabs() {
   return (
-    <Tab.Navigator>
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName
+
+          if (route.name === 'Owned') {
+            iconName = focused ? 'cube' : 'cube-outline'
+          } else if (route.name === 'Wishlist') {
+            iconName = focused ? 'heart' : 'heart-outline'
+          } else if (route.name === 'Duplicates') {
+            iconName = focused ? 'copy' : 'copy-outline'
+          } else if (route.name === 'Explore') {
+            iconName = focused ? 'search' : 'search-outline'
+          } else if (route.name === 'Profile') {
+            iconName = focused ? 'person' : 'person-outline'
+          }
+
+          return <Ionicons name={iconName} size={size} color={color} />
+        },
+        tabBarActiveTintColor: '#007AFF',
+        tabBarInactiveTintColor: 'gray'
+      })}
+    >
       <Tab.Screen
         name='Owned'
         component={OwnedStackNavigator}
