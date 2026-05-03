@@ -52,8 +52,18 @@ npx expo start
 
 ## Project Structure
 
-src/
-├── components/        # Reusable components
-├── navigation/        # Navigation configuration
-├── screens/           # Application screens
-└── services/          # Business logic and data access
+```
+funkoproject/
+├── src/
+│   ├── components/       # Reusable components
+│   ├── navigation/       # Navigation configuration
+│   ├── screens/          # Application screens
+│   └── services/         # Business logic and data access
+├── proxy/
+│   └── upc-proxy/        # Cloudflare Worker for UPC lookup
+├── assets/               # Static resources
+├── App.js                # Application entry point
+├── app.json              # Expo configuration
+├── .env                  # Environment variables (not versioned)
+└── package.json          # Project dependencies
+```
